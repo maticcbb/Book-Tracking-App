@@ -1,12 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Route } from 'react-router-dom'
+import { Route, Switch } from 'react-router-dom'
 import ListShelf from './ListShelf'
-import ListBooks from "./ListBooks";
+import ListBooks from './ListBooks'
 import * as BooksAPI from './BooksAPI'
 import './App.css'
-
-
+import { throttle, debounce } from "throttle-debounce"
 
 class BooksApp extends React.Component {
   constructor(props) {
@@ -14,7 +13,10 @@ class BooksApp extends React.Component {
     this.state = {
       books: [],
       found: [],
+      q: ""
     }
+    this.autocompleteSearchDebounced = debounce(500, this.autocompleteSearch);
+    this.autocompleteSearchThrottled = throttle(500, this.autocompleteSearch);
   }
 
   componentDidMount() {
@@ -38,6 +40,20 @@ class BooksApp extends React.Component {
     return
   }
 
+  updateBook = ( book ) => {
+    // update books
+    BooksAPI.getAll()
+      .then(books => this.setState({books}))
+    // update found if is
+    if (this.state.found.length)
+      BooksAPI.get(book.id)
+        .then(b => (
+          this.setState({found : this.state.found.map(a => (
+            (a.id !== b.id) ? a : b
+          ))})
+        ))
+  }
+
   foundBooks = (frase) => {
     if (frase)
       BooksAPI.search(frase)
@@ -45,11 +61,11 @@ class BooksApp extends React.Component {
           return this.checkBooks(matched)
         })
         .then((checked) => {
-         
+          //console.log(checked)
           this.setState({ found : checked })
         })
         .catch((error) => {
-         
+          // empty query test frase :'line'
           console.log(error)
           this.setState({found : []})
         })
@@ -58,54 +74,78 @@ class BooksApp extends React.Component {
   }
 
   moveBook = (book, shelf) => {
-    console.log(book.shelf)
-    
+    //console.log(book.shelf)
     BooksAPI.update(book, shelf)
-      .then(
-        BooksAPI.get(book.id).then(bu => console.log(bu.shelf)),
-        BooksAPI.get(book.id).then(bu => (this.updateFound(bu))),
-    
-        BooksAPI.getAll()
-          .then((books) => {this.setState({ books })})
-          .then(console.log(this.state.books)),
+      .then( idBooksOnShelfs => this.updateBook( book) )
+  }
+  changeQuery = event => {
+    this.setState({ q: event.target.value }, () => {
+      const q = this.state.q
+      if (q.length < 5) {
+        this.autocompleteSearchThrottled(this.state.q)
+      } else {
+        this.autocompleteSearchDebounced(this.state.q)
+      }
+    })
+  }
 
-        console.log("po"),
-        (() => (this.state.found.length > 0 && (
-                  console.log("nie pusta")
-        ))),
-        console.log(this.state.found.length),
-    )
-   
+  autocompleteSearch = q => {
+    this._fetch(q);
+  }
+
+  _fetch = frase => {
+
+    if (frase)
+      BooksAPI.search(frase)
+        .then((matched) => {
+          return this.checkBooks(matched)
+        })
+        .then((checked) => {
+          //console.log(checked)
+          this.setState({ found : checked })
+        })
+        .catch((error) => {
+          // empty query test frase :'line'
+          console.log(error)
+          this.setState({found : []})
+        })
+    else
+      this.setState({found : []})
   }
 
   render() {
     return (
       <div className="app">
+      <Switch>
         <Route path="/search" render={() => (
           <div className="search-books">
             <div className="search-books-bar">
-              <a className="close-search" onClick={() => this.setState({ showSearchPage: false })}>Close</a>
+              <Link
+                to="/"
+                className="close-search"
+                onClick={() => this.setState({found : []})}
+              >Close</Link>
               <div className="search-books-input-wrapper">
-                {/*
-                  NOTES: The search from BooksAPI is limited to a particular set of search terms.
-                  You can find these search terms here:
-                  https://github.com/udacity/reactnd-project-myreads-starter/blob/master/SEARCH_TERMS.md
+                {
 
-                  However, remember that the BooksAPI.search method DOES search by title or author. So, don't worry if
-                  you don't find a specific author or title. Every search is limited by search terms.
-                */}
-                <input onChange={(event) => this.foundBooks(event.target.value)} type="text" placeholder="Search by title or author"/>
+                }
+                <input
+                  onChange={this.changeQuery}
+                  type="text"
+                  placeholder="Search by title or author"
+                />
+
               </div>
             </div>
             <div className="search-books-results">
-               <ListBooks
-                    listBooks={this.state.found}
-                    addBook={this.addBook}
-                  />
+              <ListBooks
+                listBooks={this.state.found}
+                moveBook={this.moveBook}
+              />
             </div>
           </div>
         )}/>
-        <Route exact path="/" render={() => (  
+        <Route exact path="/" render={() => (
           <div className="list-books">
             <div className="list-books-title">
               <h1>MyReads</h1>
@@ -117,10 +157,12 @@ class BooksApp extends React.Component {
             <div className="open-search">
               <Link
                 to="/search"
+                onClick={() => this.setState({found : []})}
               >Add a book</Link>
             </div>
           </div>
         )}/>
+        </Switch>
       </div>
     )
   }
