@@ -132,6 +132,8 @@ body, .app {
 }
 .book-authors {
   color: #999;
+  list-style-type: none;
+  padding: 0;
 }
 
 .book-top {
@@ -160,6 +162,25 @@ body, .app {
   height: 100%;
   opacity: 0;
   cursor: pointer;
+}
+
+
+.book-add a {
+  display: block;
+  width: 35px;
+  height: 35px;
+  position: absolute;
+  right: 0;
+  bottom: -10px;
+  border-radius: 50%;
+  background: #49aa04;
+  background-size: 33px;
+  background-image: url('./icons/add.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 28px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  font-size: 0;
 }
 
 /* book cover */
