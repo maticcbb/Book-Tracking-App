@@ -26,19 +26,39 @@ class BooksApp extends React.Component {
   }
 }
 
-componentWillMount() {
-  BooksAPI.getAll().then((books) => {
-    this.setState({books})
-  })
+componentDidMount() {
+    BooksAPI.getAll().then((books) => {
+       BooksAPI.getAll()
+      this.setState({ books }).then((books) => {this.setState({ books })})
+    }).catch((error) => {console.log(error)})
 
-}
+  }	  
 
 foundBooks = (frase) => {
-  if (frase && frase.length > 0){
-    BooksAPI.search(frase).then((found) => {
-      this.setState({found})
-    })
-  }
+   if (frase)
+ BooksAPI.search(frase)
+   .then((matched) => {
+     return matched.map((book) => (
+       this.state.books.find(myBook => myBook.id === book.id) || book
+     ))
+   })
+   .then((checked) => {
+     //console.log(checked)
+     this.setState({
+       found: checked
+     })
+   })
+   .catch((error) => {
+     // empty query test frase :'line'
+     console.log(error)
+     this.setState({
+       found: []
+     })
+   })
+
+ else 
+  this.setState({found : []})
+ 
 }
 
  addBook = (book) => {
@@ -48,12 +68,7 @@ foundBooks = (frase) => {
         this.setState({ books })
     }))
   }
-  removeBook = (book) => {
-    this.setState((state) => ({
-      books: state.books.filter((b) => b.id !== book.id)
-    }))
-    BooksAPI.update(book, 'bin')
-  }
+
   moveBook = (book, shelf) => {
     // console.log(book)
     // console.log(shelf)
