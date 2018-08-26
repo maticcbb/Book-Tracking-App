@@ -8,7 +8,7 @@ import Book from './Book'
         <ol className="books-grid">
           {this.props.listBooks.map((book) => (
             <li key={book.id}>
-              <Book book={book} />
+               <Book book={book} addBook={this.props.addBook} />
             </li>
           ))}
         </ol>
