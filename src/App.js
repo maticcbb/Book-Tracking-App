@@ -9,75 +9,73 @@ import './App.css'
 
 
 class BooksApp extends React.Component {
-  constructor(props){
+  constructor(props) {
     super(props);
-  
-  this.state = {
-
-    	books: [],
-    	found: [],
-    /**
-     * TODO: Instead of using this state variable to keep track of which page
-     * we're on, use the URL in the browser's address bar. This will ensure that
-     * users can use the browser's back and forward buttons to navigate between
-     * pages, as well as provide a good URL they can bookmark and share.
-     */
-    showSearchPage: false
+    this.state = {
+      books: [],
+      found: [],
+    }
   }
-}
 
-componentDidMount() {
-    BooksAPI.getAll().then((books) => {
-       BooksAPI.getAll()
-      this.setState({ books }).then((books) => {this.setState({ books })})
-    }).catch((error) => {console.log(error)})
+  componentDidMount() {
+    BooksAPI.getAll()
+      .then((books) => {this.setState({ books })})
+      .catch((error) => {console.log(error)})
+  }
 
-  }	  
+  checkBooks = (toCheckBooks) => {
+    return toCheckBooks.map((book) => (
+      this.state.books.find(myBook => myBook.id === book.id) || book))
+  }
+  updateFound = (newBook) => {
+    console.log("update")
+    if (this.state.found.length){
+          console.log("w sukanych sa")
+          this.setState({found : this.state.found.map(book => (
+            (book.id !== newBook.id) ? book : newBook
+          ))})
+    }
+    return
+  }
 
-foundBooks = (frase) => {
-   if (frase)
- BooksAPI.search(frase)
-   .then((matched) => {
-     return matched.map((book) => (
-       this.state.books.find(myBook => myBook.id === book.id) || book
-     ))
-   })
-   .then((checked) => {
-     //console.log(checked)
-     this.setState({
-       found: checked
-     })
-   })
-   .catch((error) => {
-     // empty query test frase :'line'
-     console.log(error)
-     this.setState({
-       found: []
-     })
-   })
-
- else 
-  this.setState({found : []})
- 
-}
-
- addBook = (book) => {
-    //console.log(book)
-    BooksAPI.update(book, 'wantToRead')
-      .then(BooksAPI.getAll().then((books) => {
-        this.setState({ books })
-    }))
+  foundBooks = (frase) => {
+    if (frase)
+      BooksAPI.search(frase)
+        .then((matched) => {
+          return this.checkBooks(matched)
+        })
+        .then((checked) => {
+         
+          this.setState({ found : checked })
+        })
+        .catch((error) => {
+         
+          console.log(error)
+          this.setState({found : []})
+        })
+    else
+      this.setState({found : []})
   }
 
   moveBook = (book, shelf) => {
-    // console.log(book)
-    // console.log(shelf)
+    console.log(book.shelf)
+    
     BooksAPI.update(book, shelf)
-    .then(
-      BooksAPI.getAll().then((books) => {
-      this.setState({ books })
-    })
+      .then(
+        BooksAPI.get(book.id).then(bu => console.log(bu.shelf)),
+        BooksAPI.get(book.id).then(bu => (this.updateFound(bu))),
+    
+        BooksAPI.getAll()
+          .then((books) => {this.setState({ books })})
+          .then(console.log(this.state.books)),
+
+        console.log("po"),
+        (() => (this.state.found.length > 0 && (
+                  console.log("nie pusta")
+        ))),
+        console.log(this.state.found.length),
     )
+   
   }
 
   render() {
